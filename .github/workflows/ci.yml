@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test-and-docker:
+    name: Test, coverage, and Docker smoke test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: gradle
+
+      - name: Make Gradle wrapper executable
+        run: chmod +x ./gradlew
+
+      - name: Run tests and JaCoCo coverage verification
+        run: ./gradlew clean test jacocoTestReport jacocoTestCoverageVerification
+
+      - name: Build Docker image
+        run: docker build -t industrial-gearbox-sf-selector:ci .
+
+      - name: Run Docker container
+        run: |
+          docker run -d --name gearbox-sf-selector-ci -p 18080:8080 industrial-gearbox-sf-selector:ci
+
+      - name: Smoke test gearbox selection API
+        run: |
+          for i in {1..30}; do
+            if curl -s -X POST http://localhost:18080/api/gearbox/selection \
+              -H "Content-Type: application/json" \
+              -d '{"motorPowerKw":2.2,"inputRpm":1500,"outputRpm":50,"requiredTorqueNm":300,"loadType":"MODERATE","operatingHoursPerDay":12,"startsPerHour":20,"shockLevel":"MEDIUM"}' \
+              | tee /tmp/api-response.json \
+              | grep -q '"designTorqueNm":510.0'; then
+              echo "API smoke test passed."
+              exit 0
+            fi
+
+            echo "Waiting for API... $i"
+            sleep 2
+          done
+
+          echo "API did not respond with the expected result."
+          docker logs gearbox-sf-selector-ci || true
+          exit 1
+
+      - name: Stop Docker container
+        if: always()
+        run: docker rm -f gearbox-sf-selector-ci || true
