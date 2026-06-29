@@ -43,4 +43,79 @@ class GearboxSelectionControllerTest {
                 .andExpect(jsonPath("$.selectionStatus").value("SELECT_REDUCER_RATED_FOR_DESIGN_TORQUE"))
                 .andExpect(jsonPath("$.diagnosis").value(containsString("510.0 Nm")));
     }
+
+    @Test
+    void rejectsNegativeRequiredTorque() throws Exception {
+        mockMvc.perform(post("/api/gearbox/selection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "motorPowerKw": 2.2,
+                                  "inputRpm": 1500,
+                                  "outputRpm": 50,
+                                  "requiredTorqueNm": -300,
+                                  "loadType": "MODERATE",
+                                  "operatingHoursPerDay": 12,
+                                  "startsPerHour": 20,
+                                  "shockLevel": "MEDIUM"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsZeroOutputRpm() throws Exception {
+        mockMvc.perform(post("/api/gearbox/selection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "motorPowerKw": 2.2,
+                                  "inputRpm": 1500,
+                                  "outputRpm": 0,
+                                  "requiredTorqueNm": 300,
+                                  "loadType": "MODERATE",
+                                  "operatingHoursPerDay": 12,
+                                  "startsPerHour": 20,
+                                  "shockLevel": "MEDIUM"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsOperatingHoursAboveTwentyFour() throws Exception {
+        mockMvc.perform(post("/api/gearbox/selection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "motorPowerKw": 2.2,
+                                  "inputRpm": 1500,
+                                  "outputRpm": 50,
+                                  "requiredTorqueNm": 300,
+                                  "loadType": "MODERATE",
+                                  "operatingHoursPerDay": 25,
+                                  "startsPerHour": 20,
+                                  "shockLevel": "MEDIUM"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void rejectsMissingLoadType() throws Exception {
+        mockMvc.perform(post("/api/gearbox/selection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "motorPowerKw": 2.2,
+                                  "inputRpm": 1500,
+                                  "outputRpm": 50,
+                                  "requiredTorqueNm": 300,
+                                  "operatingHoursPerDay": 12,
+                                  "startsPerHour": 20,
+                                  "shockLevel": "MEDIUM"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
 }
