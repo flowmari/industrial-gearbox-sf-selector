@@ -1,85 +1,208 @@
 # Industrial Gearbox Sizing & Service Factor Selector
 
-> A Java/Spring Boot portfolio project by a developer with hands-on experience in industrial gearbox specifications, selection workflows, and technical communication with European machinery manufacturers.
+> Industrial gearbox domain knowledge converted into a tested Java/Spring Boot backend API.
 
-A Java Spring Boot application for calculating service factors, checking reducer sizing, and diagnosing selection inputs for industrial gearboxes based on load, operating hours, shock, and torque.
+A Java Spring Boot portfolio project for generic service factor screening, reduction ratio calculation, design torque calculation, and reducer sizing diagnosis.
+
+This project is based on hands-on experience with industrial gearbox specifications, CAD specification workflows, technical support, and communication with European machinery manufacturers.
+
+The API returns calculation results, factor breakdowns, selection reasons, and engineering risk notes based on machinery operating conditions such as load type, operating hours, start-stop frequency, shock level, torque, speed, and ambient temperature.
 
 ## Overview
 
-This is an industrial gearbox selection assistant that calculates service factors and checks reducer sizing conditions based on real-world machinery parameters.
+This is an industrial gearbox selection assistant that translates machinery selection knowledge into testable backend software.
 
-I built it from my previous experience working with European industrial gearbox manufacturers, CAD specifications, and technical communication with overseas engineering teams.
+It calculates generic service factors and checks reducer sizing conditions based on real-world machinery parameters.
 
-The goal is to translate industrial machinery domain knowledge into testable software logic using Java and Spring Boot.
+I built it from my previous experience working with European industrial gearbox manufacturers, CAD specification workflows, technical documentation, and technical communication with overseas engineering teams.
+
+The goal is to show how industrial machinery domain knowledge can be represented as Java domain logic, REST API contracts, validation rules, automated tests, Dockerized execution, and CI verification.
+
+## Engineering Scope and Safety Notice
+
+This project intentionally does not include manufacturer-specific catalog data or model-number recommendations.
+
+The current version implements a generic engineering screening model for portfolio purposes.
+
+Final reducer selection must always be verified against official manufacturer documentation.
+
+This API is intended to demonstrate software design, validation, test coverage, and industrial domain reasoning. It is not a replacement for manufacturer selection software, certified engineering review, or project-specific mechanical design checks.
 
 ## Why This Project
 
 Industrial gearbox selection is not only a simple calculation problem.
 
-In real machinery applications, reducer sizing depends on operating conditions such as load type, operating hours, shock level, required torque, input speed, output speed, and safety margin.
+In real machinery applications, reducer sizing depends on load type, operating hours, start-stop frequency, shock level, required torque, input speed, output speed, ambient temperature, and safety margin.
 
-This project focuses on turning those selection considerations into a small software tool with clear inputs, calculation logic, validation, and diagnostic output.
+A generic CRUD portfolio usually shows that a developer can connect screens, forms, and database records.
 
-## Planned MVP
+This project is different: it shows that industrial machinery knowledge can be converted into calculation logic, validation boundaries, API responses, diagnostic reasoning, and automated quality checks.
 
-The first version focuses on a simple selection workflow:
+The intended positioning is not “beginner Java project.”
 
-1. Enter machinery operating conditions
-2. Calculate the required service factor
-3. Calculate the required reduction ratio
-4. Calculate the design torque
-5. Return a basic reducer sizing diagnosis
+The intended positioning is:
 
-## Core Features
+> Industrial domain knowledge + software engineering.
 
-* Service factor calculation
-* Gear ratio calculation
+## Current Features
+
+* Generic service factor calculation using multiplicative correction factors
+* Load, duty-cycle, start-stop, shock, and ambient-temperature factor handling
+* Reduction ratio calculation
 * Design torque calculation
-* Reducer sizing check
-* Parameter diagnosis
-* English selection summary
+* Reducer sizing diagnosis
+* Factor breakdown in the API response
+* Selection reasons explaining how the result was calculated
+* Risk notes for operating conditions that may require engineering review
+* Bean Validation for unsafe or invalid API inputs
+* REST API endpoint for gearbox screening
+* JUnit and MockMvc tests
+* JaCoCo coverage verification with an 80% minimum threshold
+* Dockerized runtime
+* GitHub Actions CI for tests, coverage verification, Docker build, and API smoke test
+* Deployment health endpoints: `GET /` and `GET /health`
 
-## Example Inputs
-
-* Motor power
-* Input rpm
-* Required output rpm
-* Required torque
-* Load type
-* Operating hours per day
-* Starts per hour
-* Shock level
-
-## Example Output
-
-* Recommended service factor
-* Reduction ratio
-* Design torque
-* Selection status
-* Diagnosis message
-
-Example:
+## API Endpoint
 
 ```text
-Required torque: 300 Nm
-Service factor: 1.7
-Design torque: 510 Nm
-Diagnosis: Select a reducer rated for at least 510 Nm.
+POST /api/gearbox/selection
 ```
+
+Example request:
+
+```json
+{
+  "motorPowerKw": 2.2,
+  "inputRpm": 1500,
+  "outputRpm": 50,
+  "requiredTorqueNm": 300,
+  "loadType": "MODERATE",
+  "operatingHoursPerDay": 12,
+  "startsPerHour": 20,
+  "shockLevel": "MEDIUM",
+  "ambientTemperatureC": 35
+}
+```
+
+Example response:
+
+```json
+{
+  "reductionRatio": 30.0,
+  "serviceFactor": 1.67,
+  "designTorqueNm": 501.0,
+  "selectionStatus": "SCREENING_OK_SELECT_REDUCER_RATED_FOR_DESIGN_TORQUE",
+  "factorBreakdown": {
+    "loadFactor": 1.15,
+    "dutyCycleFactor": 1.15,
+    "startStopFactor": 1.10,
+    "shockFactor": 1.15,
+    "ambientTemperatureFactor": 1.00
+  },
+  "selectionReasons": [
+    "Reduction ratio was calculated from input rpm and output rpm: 30.0.",
+    "Load factor 1.15 was applied for MODERATE load.",
+    "Duty-cycle factor 1.15 was applied for 12.0 operating hours per day.",
+    "Start-stop factor 1.10 was applied for 20 starts per hour.",
+    "Shock factor 1.15 was applied for MEDIUM shock level.",
+    "Ambient-temperature factor 1.00 was applied for 35.0 °C.",
+    "The resulting generic service factor is 1.67, so the reducer should be rated for at least 501.0 Nm."
+  ],
+  "riskNotes": [],
+  "diagnosis": "Generic screening result: service factor 1.67 gives a design torque of 501.0 Nm. Select a reducer rated for at least this design torque, then verify the final selection against manufacturer documentation."
+}
+```
+
+## Engineering Risk Diagnosis
+
+For more severe operating conditions, the API returns engineering review notes instead of presenting the result as a simple pass/fail answer.
+
+Example risk conditions include:
+
+* High ambient temperature
+* Long daily operating hours
+* Frequent start-stop operation
+* Heavy load
+* High shock level
+
+In those cases, the response may return:
+
+```text
+SCREENING_REQUIRES_ENGINEERING_REVIEW
+```
+
+This is intentional.
+
+The project is designed to show not only calculation output, but also the ability to identify conditions that require more careful engineering review.
+
+## Validation Examples
+
+The API rejects unsafe or invalid inputs such as:
+
+* `requiredTorqueNm` less than or equal to zero
+* `outputRpm` less than or equal to zero
+* `operatingHoursPerDay` greater than 24
+* negative `startsPerHour`
+* ambient temperature outside the supported screening range
+* missing `loadType`
+* missing `shockLevel`
+
+This makes the project closer to a backend service with realistic input boundaries, rather than a simple calculation script.
 
 ## Tech Stack
 
-* Java
+* Java 17
 * Spring Boot
 * Gradle
-* JUnit
 * Bean Validation
-* REST API
+* JUnit
+* MockMvc
+* JaCoCo
+* Docker
+* GitHub Actions
+
+## Testing and Quality Gate
+
+This project uses automated tests and coverage verification.
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification
+```
+
+The Gradle build verifies a minimum test coverage threshold of 80%.
+
+GitHub Actions runs tests, coverage verification, Docker build, and an API smoke test on each push to `main`.
 
 ## Portfolio Focus
 
 This project demonstrates the ability to combine industrial gearbox domain knowledge with software engineering.
 
-It is not intended to be a manufacturer-specific selection tool.
+It shows how machinery selection knowledge can be represented as:
 
-It is a portfolio project for implementing calculation logic, validation, and diagnostic rules in a testable Java application.
+* domain logic
+* validation rules
+* REST API contracts
+* diagnostic response design
+* automated tests
+* coverage verification
+* Dockerized execution
+* CI smoke testing
+
+The CAD-related background is used as domain context for understanding specifications, mounting conditions, technical documentation, and real-world selection workflows.
+
+CAD drawing generation, manufacturer-specific dimensional databases, and model-number recommendation logic are intentionally outside the current scope.
+
+The intended portfolio message is:
+
+> Industrial domain knowledge converted into a tested Java API.
+
+## Roadmap
+
+Potential future improvements include:
+
+* simple web UI for entering selection conditions
+* OpenAPI / Swagger documentation
+* PDF-style selection summary output
+* optional project history storage
+* deployment to a public cloud environment
+* generic IEC/DIN-related filtering notes without manufacturer-specific catalog data
