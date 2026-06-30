@@ -163,7 +163,7 @@ The Gradle build verifies a minimum test coverage threshold of 80%.
 
 GitHub Actions runs tests, coverage verification, Docker build, and an API smoke test on each push to `main`.
 
-## Portfolio Focus
+## Engineering Focus
 
 This project demonstrates the ability to combine industrial gearbox domain knowledge with software engineering.
 
