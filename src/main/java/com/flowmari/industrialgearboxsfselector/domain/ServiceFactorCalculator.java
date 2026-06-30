@@ -1,26 +1,49 @@
 package com.flowmari.industrialgearboxsfselector.domain;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ServiceFactorCalculator {
+
+    private static final String SCREENING_OK_STATUS = "SCREENING_OK_SELECT_REDUCER_RATED_FOR_DESIGN_TORQUE";
+    private static final String ENGINEERING_REVIEW_STATUS = "SCREENING_REQUIRES_ENGINEERING_REVIEW";
 
     public GearboxSelectionResult calculate(GearboxSelectionInput input) {
         validate(input);
 
         double reductionRatio = roundToOneDecimal(input.inputRpm() / input.outputRpm());
 
-        double serviceFactor = roundToOneDecimal(1.0
-                + loadTypeFactor(input.loadType())
-                + operatingHoursFactor(input.operatingHoursPerDay())
-                + startsPerHourFactor(input.startsPerHour())
-                + shockLevelFactor(input.shockLevel()));
+        FactorBreakdown factorBreakdown = new FactorBreakdown(
+                loadFactor(input.loadType()),
+                dutyCycleFactor(input.operatingHoursPerDay()),
+                startStopFactor(input.startsPerHour()),
+                shockFactor(input.shockLevel()),
+                ambientTemperatureFactor(input.ambientTemperatureC())
+        );
+
+        double serviceFactor = roundToTwoDecimals(
+                factorBreakdown.loadFactor()
+                        * factorBreakdown.dutyCycleFactor()
+                        * factorBreakdown.startStopFactor()
+                        * factorBreakdown.shockFactor()
+                        * factorBreakdown.ambientTemperatureFactor()
+        );
 
         double designTorqueNm = roundToOneDecimal(input.requiredTorqueNm() * serviceFactor);
 
-        String diagnosis = buildDiagnosis(input, designTorqueNm, serviceFactor);
+        List<String> riskNotes = buildRiskNotes(input);
+        String selectionStatus = riskNotes.isEmpty() ? SCREENING_OK_STATUS : ENGINEERING_REVIEW_STATUS;
+        List<String> selectionReasons = buildSelectionReasons(input, reductionRatio, serviceFactor, designTorqueNm, factorBreakdown);
+        String diagnosis = buildDiagnosis(serviceFactor, designTorqueNm, riskNotes);
 
         return new GearboxSelectionResult(
                 reductionRatio,
                 serviceFactor,
                 designTorqueNm,
+                selectionStatus,
+                factorBreakdown,
+                selectionReasons,
+                riskNotes,
                 diagnosis
         );
     }
@@ -47,6 +70,9 @@ public class ServiceFactorCalculator {
         if (input.startsPerHour() < 0) {
             throw new IllegalArgumentException("Starts per hour must not be negative.");
         }
+        if (input.ambientTemperatureC() < -20 || input.ambientTemperatureC() > 80) {
+            throw new IllegalArgumentException("Ambient temperature must be between -20 and 80 degrees Celsius.");
+        }
         if (input.loadType() == null) {
             throw new IllegalArgumentException("Load type must not be null.");
         }
@@ -55,62 +81,110 @@ public class ServiceFactorCalculator {
         }
     }
 
-    private double loadTypeFactor(LoadType loadType) {
+    private double loadFactor(LoadType loadType) {
         return switch (loadType) {
-            case LIGHT -> 0.0;
-            case MODERATE -> 0.2;
-            case HEAVY -> 0.4;
+            case LIGHT -> 1.00;
+            case MODERATE -> 1.15;
+            case HEAVY -> 1.30;
         };
     }
 
-    private double operatingHoursFactor(double hours) {
+    private double dutyCycleFactor(double hours) {
         if (hours <= 8) {
-            return 0.0;
+            return 1.00;
         }
         if (hours <= 16) {
-            return 0.2;
+            return 1.15;
         }
-        return 0.4;
+        return 1.30;
     }
 
-    private double startsPerHourFactor(int startsPerHour) {
+    private double startStopFactor(int startsPerHour) {
         if (startsPerHour <= 10) {
-            return 0.0;
+            return 1.00;
         }
         if (startsPerHour <= 30) {
-            return 0.1;
+            return 1.10;
         }
-        return 0.2;
+        return 1.20;
     }
 
-    private double shockLevelFactor(ShockLevel shockLevel) {
+    private double shockFactor(ShockLevel shockLevel) {
         return switch (shockLevel) {
-            case LOW -> 0.0;
-            case MEDIUM -> 0.2;
-            case HIGH -> 0.4;
+            case LOW -> 1.00;
+            case MEDIUM -> 1.15;
+            case HIGH -> 1.30;
         };
     }
 
-    private String buildDiagnosis(
-            GearboxSelectionInput input,
-            double designTorqueNm,
-            double serviceFactor
-    ) {
-        String message = "The required design torque is %.1f Nm. Select a reducer rated for at least %.1f Nm. The calculated service factor is %.1f based on load type, operating hours, starts per hour, and shock level."
-                .formatted(designTorqueNm, designTorqueNm, serviceFactor);
+    private double ambientTemperatureFactor(double ambientTemperatureC) {
+        if (ambientTemperatureC <= 40) {
+            return 1.00;
+        }
+        if (ambientTemperatureC <= 50) {
+            return 1.10;
+        }
+        return 1.20;
+    }
 
-        if (input.loadType() == LoadType.HEAVY || input.shockLevel() == ShockLevel.HIGH) {
-            message += " Heavy load or high shock conditions require careful reducer sizing.";
+    private List<String> buildSelectionReasons(
+            GearboxSelectionInput input,
+            double reductionRatio,
+            double serviceFactor,
+            double designTorqueNm,
+            FactorBreakdown factorBreakdown
+    ) {
+        return List.of(
+                "Reduction ratio was calculated from input rpm and output rpm: %.1f.".formatted(reductionRatio),
+                "Load factor %.2f was applied for %s load.".formatted(factorBreakdown.loadFactor(), input.loadType()),
+                "Duty-cycle factor %.2f was applied for %.1f operating hours per day.".formatted(factorBreakdown.dutyCycleFactor(), input.operatingHoursPerDay()),
+                "Start-stop factor %.2f was applied for %d starts per hour.".formatted(factorBreakdown.startStopFactor(), input.startsPerHour()),
+                "Shock factor %.2f was applied for %s shock level.".formatted(factorBreakdown.shockFactor(), input.shockLevel()),
+                "Ambient-temperature factor %.2f was applied for %.1f °C.".formatted(factorBreakdown.ambientTemperatureFactor(), input.ambientTemperatureC()),
+                "The resulting generic service factor is %.2f, so the reducer should be rated for at least %.1f Nm.".formatted(serviceFactor, designTorqueNm)
+        );
+    }
+
+    private List<String> buildRiskNotes(GearboxSelectionInput input) {
+        List<String> riskNotes = new ArrayList<>();
+
+        if (input.ambientTemperatureC() > 50) {
+            riskNotes.add("Ambient temperature is above 50 °C; verify thermal limits, lubrication, and derating with manufacturer documentation.");
+        } else if (input.ambientTemperatureC() > 40) {
+            riskNotes.add("Ambient temperature is above 40 °C; check manufacturer thermal rating and lubricant recommendations.");
+        }
+
+        if (input.operatingHoursPerDay() > 16) {
+            riskNotes.add("Long daily operating hours may require thermal and bearing-life checks.");
         }
 
         if (input.startsPerHour() > 30) {
-            message += " Frequent start-stop operation may require an additional safety margin.";
+            riskNotes.add("Frequent start-stop operation may require an additional safety margin.");
         }
 
-        return message;
+        if (input.loadType() == LoadType.HEAVY || input.shockLevel() == ShockLevel.HIGH) {
+            riskNotes.add("Heavy load or high shock conditions may require an additional safety margin and manufacturer review.");
+        }
+
+        return riskNotes;
+    }
+
+    private String buildDiagnosis(double serviceFactor, double designTorqueNm, List<String> riskNotes) {
+        String diagnosis = "Generic screening result: service factor %.2f gives a design torque of %.1f Nm. Select a reducer rated for at least this design torque, then verify the final selection against manufacturer documentation."
+                .formatted(serviceFactor, designTorqueNm);
+
+        if (!riskNotes.isEmpty()) {
+            diagnosis += " Additional engineering review is recommended because risk notes were detected.";
+        }
+
+        return diagnosis;
     }
 
     private double roundToOneDecimal(double value) {
         return Math.round(value * 10.0) / 10.0;
+    }
+
+    private double roundToTwoDecimals(double value) {
+        return Math.round(value * 100.0) / 100.0;
     }
 }

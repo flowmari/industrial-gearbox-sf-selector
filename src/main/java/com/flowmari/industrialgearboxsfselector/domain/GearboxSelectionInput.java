@@ -8,6 +8,7 @@ public record GearboxSelectionInput(
         LoadType loadType,
         double operatingHoursPerDay,
         int startsPerHour,
-        ShockLevel shockLevel
+        ShockLevel shockLevel,
+        double ambientTemperatureC
 ) {
 }
