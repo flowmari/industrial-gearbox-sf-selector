@@ -14,9 +14,7 @@ This is an industrial gearbox selection assistant that translates machinery sele
 
 It calculates generic service factors and checks reducer sizing conditions based on real-world machinery parameters.
 
-I built it from my previous experience working with European industrial gearbox manufacturers, CAD specification workflows, technical documentation, and technical communication with overseas engineering teams.
-
-The goal is to show how industrial machinery domain knowledge can be represented as Java domain logic, REST API contracts, validation rules, automated tests, Dockerized execution, and CI verification.
+The implementation focuses on representing industrial selection rules as Java domain logic, REST API contracts, validation rules, automated tests, Dockerized execution, and CI verification.
 
 ## Engineering Scope and Safety Notice
 
@@ -34,15 +32,7 @@ Industrial gearbox selection is not only a simple calculation problem.
 
 In real machinery applications, reducer sizing depends on load type, operating hours, start-stop frequency, shock level, required torque, input speed, output speed, ambient temperature, and safety margin.
 
-A generic CRUD portfolio usually shows that a developer can connect screens, forms, and database records.
-
-This project is different: it shows that industrial machinery knowledge can be converted into calculation logic, validation boundaries, API responses, diagnostic reasoning, and automated quality checks.
-
-The intended positioning is not “beginner Java project.”
-
-The intended positioning is:
-
-> Industrial domain knowledge + software engineering.
+This project focuses on converting those selection considerations into calculation logic, validation boundaries, API responses, diagnostic reasoning, and automated quality checks.
 
 ## Current Features
 
@@ -191,10 +181,6 @@ It shows how machinery selection knowledge can be represented as:
 The CAD-related background is used as domain context for understanding specifications, mounting conditions, technical documentation, and real-world selection workflows.
 
 CAD drawing generation, manufacturer-specific dimensional databases, and model-number recommendation logic are intentionally outside the current scope.
-
-The intended portfolio message is:
-
-> Industrial domain knowledge converted into a tested Java API.
 
 ## Roadmap
 
