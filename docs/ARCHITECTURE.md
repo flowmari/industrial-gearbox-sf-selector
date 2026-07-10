@@ -7,14 +7,27 @@ The application is intentionally small, but it separates API handling, validatio
 ## High-Level Flow
 
 ```mermaid
-flowchart LR
-    Client[API client] --> Controller[GearboxSelectionController]
-    Controller --> Request[GearboxSelectionRequest]
-    Request --> DomainInput[GearboxSelectionInput]
-    DomainInput --> Calculator[ServiceFactorCalculator]
-    Calculator --> Result[GearboxSelectionResult]
-    Result --> Response[GearboxSelectionResponse]
-    Controller --> Response
+flowchart TD
+    Client[API client]
+    Controller[GearboxSelectionController]
+    Request[GearboxSelectionRequest<br/>Bean Validation]
+    DomainInput[GearboxSelectionInput]
+    Calculator[ServiceFactorCalculator]
+    Result[GearboxSelectionResult]
+    Response[GearboxSelectionResponse]
+    Problem[ApiExceptionHandler<br/>ProblemDetail response]
+
+    Client --> Controller
+    Controller --> Request
+    Request --> DomainInput
+    DomainInput --> Calculator
+    Calculator --> Result
+    Result --> Response
+    Response --> Client
+
+    Controller -. invalid request .-> Problem
+    Calculator -. domain validation error .-> Problem
+    Problem --> Client
 ```
 
 ## Main Layers
