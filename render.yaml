@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: industrial-gearbox-sf-selector
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health

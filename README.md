@@ -298,3 +298,7 @@ Potential future improvements include:
 * optional project history storage
 * deployment to a public cloud environment
 * generic IEC/DIN-related filtering notes without manufacturer-specific catalog data
+
+## Documentation
+
+- [Deployment notes](docs/DEPLOYMENT.md)
