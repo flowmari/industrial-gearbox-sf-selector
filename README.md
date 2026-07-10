@@ -99,6 +99,16 @@ docker build -t industrial-gearbox-sf-selector:local .
 docker run --rm -p 8080:8080 industrial-gearbox-sf-selector:local
 ```
 
+## API Documentation
+
+When the application is running locally, the OpenAPI documentation is available at:
+
+* OpenAPI JSON: `/v3/api-docs`
+* Swagger UI: `/swagger-ui.html`
+* Direct Swagger UI path: `/swagger-ui/index.html`
+
+The OpenAPI documentation is generated from the Spring Boot application and describes the gearbox screening endpoint, request fields, response fields, validation behavior, and health endpoints.
+
 ## API Endpoint
 
 ```text
