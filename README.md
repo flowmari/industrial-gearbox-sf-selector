@@ -222,6 +222,12 @@ Examples covered by tests include:
 * 40.0 °C and 40.1 °C
 * 50.0 °C and 50.1 °C
 
+## Architecture Overview
+
+The application structure is documented in [Architecture Overview](docs/ARCHITECTURE.md).
+
+It explains the API layer, domain calculation layer, error handling, OpenAPI documentation, and quality gates.
+
 ## Calculation Model
 
 The generic screening logic is documented in [Calculation Model](docs/CALCULATION_MODEL.md).
