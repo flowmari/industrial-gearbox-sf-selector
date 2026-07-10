@@ -10,12 +10,12 @@ The application is intentionally small, but it separates API handling, validatio
 flowchart TD
     Client[API client]
     Controller[GearboxSelectionController]
-    Request[GearboxSelectionRequest<br/>Bean Validation]
+    Request["GearboxSelectionRequest<br/>Bean Validation"]
     DomainInput[GearboxSelectionInput]
     Calculator[ServiceFactorCalculator]
     Result[GearboxSelectionResult]
     Response[GearboxSelectionResponse]
-    Problem[ApiExceptionHandler<br/>ProblemDetail response]
+    Problem["ApiExceptionHandler<br/>ProblemDetail response"]
 
     Client --> Controller
     Controller --> Request
