@@ -10,6 +10,17 @@ This project is based on hands-on experience with industrial gearbox specificati
 
 The API returns calculation results, factor breakdowns, selection reasons, and engineering risk notes based on machinery operating conditions such as load type, operating hours, start-stop frequency, shock level, torque, speed, and ambient temperature.
 
+## Live API
+
+The API is deployed on Render:
+
+- Root endpoint: https://industrial-gearbox-sf-selector.onrender.com/
+- Health check: https://industrial-gearbox-sf-selector.onrender.com/health
+- OpenAPI JSON: https://industrial-gearbox-sf-selector.onrender.com/v3/api-docs
+- Swagger UI: https://industrial-gearbox-sf-selector.onrender.com/swagger-ui/index.html
+
+Note: The free Render instance may take a short time to wake up after inactivity.
+
 ## Overview
 
 This is an industrial gearbox selection assistant that translates machinery selection knowledge into testable backend software.
