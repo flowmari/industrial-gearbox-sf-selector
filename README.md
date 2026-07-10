@@ -1,5 +1,7 @@
 # Industrial Gearbox Sizing & Service Factor Selector
 
+[![CI](https://github.com/flowmari/industrial-gearbox-sf-selector/actions/workflows/ci.yml/badge.svg)](https://github.com/flowmari/industrial-gearbox-sf-selector/actions/workflows/ci.yml)
+
 > Industrial gearbox domain knowledge converted into a tested Java/Spring Boot backend API.
 
 A Java Spring Boot portfolio project for generic service factor screening, reduction ratio calculation, design torque calculation, and reducer sizing diagnosis.
@@ -51,6 +53,51 @@ This project focuses on converting those selection considerations into calculati
 * Dockerized runtime
 * GitHub Actions CI for tests, coverage verification, Docker build, and API smoke test
 * Deployment health endpoints: `GET /` and `GET /health`
+
+## Quick Start
+
+Run the full local verification:
+
+```bash
+./gradlew clean test jacocoTestReport jacocoTestCoverageVerification
+```
+
+Start the API locally:
+
+```bash
+./gradlew bootRun
+```
+
+Check the deployment health endpoint:
+
+```bash
+curl http://localhost:8080/health
+```
+
+Call the gearbox screening API:
+
+```bash
+curl -X POST http://localhost:8080/api/gearbox/selection \
+  -H "Content-Type: application/json" \
+  -d '{
+    "motorPowerKw": 2.2,
+    "inputRpm": 1500,
+    "outputRpm": 50,
+    "requiredTorqueNm": 300,
+    "loadType": "MODERATE",
+    "operatingHoursPerDay": 12,
+    "startsPerHour": 20,
+    "shockLevel": "MEDIUM",
+    "ambientTemperatureC": 35
+  }'
+```
+
+Run with Docker:
+
+```bash
+docker build -t industrial-gearbox-sf-selector:local .
+docker run --rm -p 8080:8080 industrial-gearbox-sf-selector:local
+```
 
 ## API Endpoint
 
@@ -140,11 +187,47 @@ The API rejects unsafe or invalid inputs such as:
 This makes the project closer to a backend service with realistic input boundaries, rather than a simple calculation script.
 
 
+## Quality Gates
+
+This project includes automated checks for both domain logic and API behavior.
+
+The current verification flow covers:
+
+* Java domain tests for service factor calculation
+* boundary tests for duty-cycle, start-stop, and ambient-temperature thresholds
+* MockMvc API tests for successful and invalid requests
+* ProblemDetail error responses for invalid API inputs
+* JaCoCo coverage verification with an 80% minimum threshold
+* Docker image build verification
+* GitHub Actions CI for tests, coverage verification, Docker build, and API smoke testing
+
+The boundary tests are especially important because small changes around threshold values can change the service factor, design torque, selection status, and risk notes.
+
+Examples covered by tests include:
+
+* 8.0 hours and 8.1 hours
+* 16.0 hours and 16.1 hours
+* 10 and 11 starts per hour
+* 30 and 31 starts per hour
+* 40.0 °C and 40.1 °C
+* 50.0 °C and 50.1 °C
+
 ## Calculation Model
 
 The generic screening logic is documented in [Calculation Model](docs/CALCULATION_MODEL.md).
 
 It explains the multiplicative service factor model, factor thresholds, risk notes, boundary testing strategy, and why manufacturer-specific catalog data is intentionally excluded.
+
+## Future Scope
+
+Possible future improvements include:
+
+* OpenAPI documentation for easier API review
+* a deployed public demo endpoint
+* exported screening summaries for technical communication
+* additional non-manufacturer-specific checks for mounting environment, operating assumptions, and specification review
+
+CAD and specification workflow experience is relevant background for understanding reducer selection conditions. However, CAD drawing generation, manufacturer-specific dimensional databases, and actual model-number recommendations are intentionally outside the current scope.
 
 ## Tech Stack
 
