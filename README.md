@@ -4,7 +4,7 @@
 
 > Industrial gearbox domain knowledge converted into a tested Java/Spring Boot backend API.
 
-A Java Spring Boot portfolio project for generic service factor screening, reduction ratio calculation, design torque calculation, and reducer sizing diagnosis.
+A Java Spring Boot backend API for generic service factor screening, reduction ratio calculation, design torque calculation, and reducer sizing diagnosis.
 
 This project is based on hands-on experience with industrial gearbox specifications, CAD specification workflows, technical support, and communication with European machinery manufacturers.
 
@@ -22,7 +22,7 @@ The implementation focuses on representing industrial selection rules as Java do
 
 This project intentionally does not include manufacturer-specific catalog data or model-number recommendations.
 
-The current version implements a generic engineering screening model for portfolio purposes.
+The current version implements a generic engineering screening model for software design demonstration purposes.
 
 Final reducer selection must always be verified against official manufacturer documentation.
 
@@ -232,7 +232,7 @@ It explains the multiplicative service factor model, factor thresholds, risk not
 
 Possible future improvements include:
 
-* OpenAPI documentation for easier API review
+* public deployment for a live API endpoint and Swagger UI access
 * a deployed public demo endpoint
 * exported screening summaries for technical communication
 * additional non-manufacturer-specific checks for mounting environment, operating assumptions, and specification review
@@ -287,7 +287,7 @@ CAD drawing generation, manufacturer-specific dimensional databases, and model-n
 Potential future improvements include:
 
 * simple web UI for entering selection conditions
-* OpenAPI / Swagger documentation
+* public deployment with live OpenAPI / Swagger UI access
 * PDF-style selection summary output
 * optional project history storage
 * deployment to a public cloud environment
