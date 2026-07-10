@@ -139,6 +139,13 @@ The API rejects unsafe or invalid inputs such as:
 
 This makes the project closer to a backend service with realistic input boundaries, rather than a simple calculation script.
 
+
+## Calculation Model
+
+The generic screening logic is documented in [Calculation Model](docs/CALCULATION_MODEL.md).
+
+It explains the multiplicative service factor model, factor thresholds, risk notes, boundary testing strategy, and why manufacturer-specific catalog data is intentionally excluded.
+
 ## Tech Stack
 
 * Java 17
