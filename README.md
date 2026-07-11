@@ -313,3 +313,19 @@ Potential future improvements include:
 ## Documentation
 
 - [Deployment notes](docs/DEPLOYMENT.md)
+
+## Engineering Review Checklist
+
+The API response includes an engineering review checklist to surface generic final-verification boundaries before reducer selection is finalized.
+
+The checklist is intentionally limited to review notes. It does not generate CAD drawings, BOMs, manufacturer-specific catalog data, or model-number recommendations.
+
+Examples of final-verification boundaries include:
+
+* official manufacturer documentation
+* mounting position, shaft orientation, and installation constraints
+* coupling, motor, and driven-machine interfaces
+* thermal rating, lubricant recommendation, and ambient-temperature derating
+* bearing-life assumptions for long daily operating hours
+* start-stop duty and motor starting behavior
+* shock loading, shaft loads, and application-specific safety margin

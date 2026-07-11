@@ -39,6 +39,11 @@ class ServiceFactorCalculatorTest {
                 "The resulting generic service factor is 1.67, so the reducer should be rated for at least 501.0 Nm."
         );
         assertThat(result.riskNotes()).isEmpty();
+        assertThat(result.engineeringReviewChecklist()).contains(
+                "Verify the final reducer rating, service factor, and application conditions against official manufacturer documentation.",
+                "Confirm mounting position, shaft orientation, and installation constraints before final selection.",
+                "Confirm coupling, motor, and driven-machine interfaces separately before final selection."
+        );
         assertThat(result.diagnosis()).contains("manufacturer documentation");
     }
 
@@ -64,6 +69,11 @@ class ServiceFactorCalculatorTest {
         assertThat(result.riskNotes()).hasSize(4);
         assertThat(result.riskNotes()).anyMatch(note -> note.contains("Ambient temperature"));
         assertThat(result.riskNotes()).anyMatch(note -> note.contains("start-stop"));
+        assertThat(result.engineeringReviewChecklist()).hasSize(7);
+        assertThat(result.engineeringReviewChecklist()).anyMatch(note -> note.contains("mounting position"));
+        assertThat(result.engineeringReviewChecklist()).anyMatch(note -> note.contains("bearing-life assumptions"));
+        assertThat(result.engineeringReviewChecklist()).anyMatch(note -> note.contains("coupling compatibility"));
+        assertThat(result.engineeringReviewChecklist()).anyMatch(note -> note.contains("shock loading"));
         assertThat(result.diagnosis()).contains("Additional engineering review");
     }
 

@@ -50,6 +50,9 @@ class GearboxSelectionControllerTest {
                 .andExpect(jsonPath("$.selectionReasons[0]").value(containsString("Reduction ratio")))
                 .andExpect(jsonPath("$.selectionReasons[6]").value(containsString("501.0 Nm")))
                 .andExpect(jsonPath("$.riskNotes.length()").value(0))
+                .andExpect(jsonPath("$.engineeringReviewChecklist.length()").value(3))
+                .andExpect(jsonPath("$.engineeringReviewChecklist[0]").value(containsString("manufacturer documentation")))
+                .andExpect(jsonPath("$.engineeringReviewChecklist[1]").value(containsString("mounting position")))
                 .andExpect(jsonPath("$.diagnosis").value(containsString("manufacturer documentation")));
     }
 
@@ -75,7 +78,9 @@ class GearboxSelectionControllerTest {
                 .andExpect(jsonPath("$.serviceFactor").value(3.16))
                 .andExpect(jsonPath("$.designTorqueNm").value(948.0))
                 .andExpect(jsonPath("$.riskNotes.length()").value(4))
-                .andExpect(jsonPath("$.riskNotes[0]").value(containsString("Ambient temperature")));
+                .andExpect(jsonPath("$.riskNotes[0]").value(containsString("Ambient temperature")))
+                .andExpect(jsonPath("$.engineeringReviewChecklist.length()").value(7))
+                .andExpect(jsonPath("$.engineeringReviewChecklist[5]").value(containsString("coupling compatibility")));
     }
 
     @Test

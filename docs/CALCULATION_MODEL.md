@@ -200,3 +200,17 @@ The intended message is:
 ```text
 Industrial gearbox screening knowledge converted into a tested Java API.
 ```
+
+## Engineering Review Checklist
+
+The engineering review checklist is a generic final-verification aid returned with the screening response.
+
+It does not generate CAD drawings, BOMs, manufacturer-specific catalog data, or model-number recommendations. Instead, it lists review boundaries that should be checked before final reducer selection, such as:
+
+* official manufacturer documentation
+* mounting position, shaft orientation, and installation constraints
+* coupling, motor, and driven-machine interfaces
+* thermal rating, lubricant recommendation, and ambient-temperature derating
+* bearing-life assumptions for long daily operating hours
+* start-stop duty and motor starting behavior
+* shock loading, shaft loads, and application-specific safety margin
