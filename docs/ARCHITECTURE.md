@@ -100,3 +100,9 @@ This project is a generic engineering screening API.
 It is not a replacement for manufacturer selection software, certified engineering review, or project-specific mechanical design checks.
 
 Final reducer selection must always be verified against official manufacturer documentation.
+
+## Engineering Review Checklist Boundary
+
+The domain layer returns engineering review checklist notes as generic final-verification boundaries.
+
+This keeps the API focused on screening, diagnostics, validation, and review guidance. It is not a replacement for manufacturer selection software, CAD drawing generation, BOM generation, certified engineering review, or project-specific mechanical design checks.

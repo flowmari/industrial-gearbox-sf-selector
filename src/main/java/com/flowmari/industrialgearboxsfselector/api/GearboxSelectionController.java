@@ -30,8 +30,8 @@ public class GearboxSelectionController {
             summary = "Calculate generic gearbox screening result",
             description = """
                     Calculates reduction ratio, generic service factor, design torque,
-                    factor breakdown, selection reasons, risk notes, and screening status
-                    from industrial gearbox operating conditions.
+                    factor breakdown, selection reasons, risk notes, engineering review checklist,
+                    and screening status from industrial gearbox operating conditions.
                     """
     )
     @ApiResponses({

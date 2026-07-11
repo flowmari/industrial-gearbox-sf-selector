@@ -32,6 +32,7 @@ public class ServiceFactorCalculator {
         double designTorqueNm = roundToOneDecimal(input.requiredTorqueNm() * serviceFactor);
 
         List<String> riskNotes = buildRiskNotes(input);
+        List<String> engineeringReviewChecklist = buildEngineeringReviewChecklist(input);
         String selectionStatus = riskNotes.isEmpty() ? SCREENING_OK_STATUS : ENGINEERING_REVIEW_STATUS;
         List<String> selectionReasons = buildSelectionReasons(input, reductionRatio, serviceFactor, designTorqueNm, factorBreakdown);
         String diagnosis = buildDiagnosis(serviceFactor, designTorqueNm, riskNotes);
@@ -44,6 +45,7 @@ public class ServiceFactorCalculator {
                 factorBreakdown,
                 selectionReasons,
                 riskNotes,
+                engineeringReviewChecklist,
                 diagnosis
         );
     }
@@ -167,6 +169,32 @@ public class ServiceFactorCalculator {
         }
 
         return riskNotes;
+    }
+
+    private List<String> buildEngineeringReviewChecklist(GearboxSelectionInput input) {
+        List<String> checklist = new ArrayList<>();
+
+        checklist.add("Verify the final reducer rating, service factor, and application conditions against official manufacturer documentation.");
+        checklist.add("Confirm mounting position, shaft orientation, and installation constraints before final selection.");
+        checklist.add("Confirm coupling, motor, and driven-machine interfaces separately before final selection.");
+
+        if (input.ambientTemperatureC() > 40) {
+            checklist.add("Review ambient-temperature derating, thermal rating, and lubricant recommendation for the installation environment.");
+        }
+
+        if (input.operatingHoursPerDay() > 16) {
+            checklist.add("Review thermal capacity, lubricant recommendations, and bearing-life assumptions for long daily operating hours.");
+        }
+
+        if (input.startsPerHour() > 30) {
+            checklist.add("Review start-stop duty, motor starting behavior, and coupling compatibility for frequent cycling.");
+        }
+
+        if (input.loadType() == LoadType.HEAVY || input.shockLevel() == ShockLevel.HIGH) {
+            checklist.add("Review shock loading, shaft loads, and application-specific safety margin separately.");
+        }
+
+        return checklist;
     }
 
     private String buildDiagnosis(double serviceFactor, double designTorqueNm, List<String> riskNotes) {

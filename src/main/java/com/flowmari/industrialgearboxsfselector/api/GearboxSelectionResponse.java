@@ -29,6 +29,9 @@ public record GearboxSelectionResponse(
         @Schema(description = "Engineering risk notes that should be reviewed against manufacturer documentation.")
         List<String> riskNotes,
 
+        @Schema(description = "Generic engineering checklist for final review boundaries before reducer selection is finalized.")
+        List<String> engineeringReviewChecklist,
+
         @Schema(description = "Summary diagnosis message.")
         String diagnosis
 ) {
@@ -41,6 +44,7 @@ public record GearboxSelectionResponse(
                 result.factorBreakdown(),
                 result.selectionReasons(),
                 result.riskNotes(),
+                result.engineeringReviewChecklist(),
                 result.diagnosis()
         );
     }
