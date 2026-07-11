@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/flowmari/industrial-gearbox-sf-selector/actions/workflows/ci.yml/badge.svg)](https://github.com/flowmari/industrial-gearbox-sf-selector/actions/workflows/ci.yml)
 
-> Industrial gearbox domain knowledge converted into a tested Java/Spring Boot backend API.
+> Generic industrial gearbox service-factor screening implemented as a tested Java/Spring Boot REST API.
 
 A Java Spring Boot backend API for generic service factor screening, reduction ratio calculation, design torque calculation, and reducer sizing diagnosis.
 
