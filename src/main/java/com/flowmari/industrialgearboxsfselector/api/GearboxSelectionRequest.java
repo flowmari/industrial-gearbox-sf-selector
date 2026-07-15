@@ -12,7 +12,7 @@ import jakarta.validation.constraints.PositiveOrZero;
 
 @Schema(description = "Input conditions for generic industrial gearbox screening.")
 public record GearboxSelectionRequest(
-        @Schema(description = "Motor power in kilowatts.", example = "2.2")
+        @Schema(description = "Motor rated mechanical output power at the gearbox input, in kilowatts.", example = "2.2")
         @NotNull @Positive Double motorPowerKw,
 
         @Schema(description = "Input speed in rpm.", example = "1500")
