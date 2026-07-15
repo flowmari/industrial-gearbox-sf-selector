@@ -6,8 +6,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasKey;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -30,6 +32,8 @@ class OpenApiDocumentationTest {
                 .andExpect(jsonPath("$.components.schemas.GearboxSelectionResponse.properties", hasKey("calculationModelVersion")))
                 .andExpect(jsonPath("$.components.schemas.GearboxSelectionResponse.properties", hasKey("requiredOutputPowerKw")))
                 .andExpect(jsonPath("$.components.schemas.GearboxSelectionResponse.properties", hasKey("minimumRequiredOverallEfficiency")))
-                .andExpect(jsonPath("$.components.schemas.GearboxSelectionResponse.properties", hasKey("powerFeasibilityStatus")));
+                .andExpect(jsonPath("$.components.schemas.GearboxSelectionResponse.properties", hasKey("powerFeasibilityStatus")))
+                .andExpect(content().string(containsString("VERIFY_ACTUAL_EFFICIENCY_AND_MOTOR_DUTY")))
+                .andExpect(content().string(containsString("REQUIRED_OUTPUT_POWER_MEETS_OR_EXCEEDS_MOTOR_POWER")));
     }
 }
