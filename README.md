@@ -4,7 +4,7 @@
 
 > Generic industrial gearbox service-factor screening implemented as a tested Java/Spring Boot REST API.
 
-A Java Spring Boot backend API for generic service factor screening, reduction ratio calculation, design torque calculation, and reducer sizing diagnosis.
+A Java Spring Boot backend API for generic service factor screening, reduction ratio calculation, design torque calculation, bounded power-feasibility diagnostics, and reducer sizing diagnosis.
 
 This project is based on hands-on experience with industrial gearbox specifications, CAD specification workflows, technical support, and communication with European machinery manufacturers.
 
@@ -53,6 +53,9 @@ This project focuses on converting those selection considerations into calculati
 * Load, duty-cycle, start-stop, shock, and ambient-temperature factor handling
 * Reduction ratio calculation
 * Design torque calculation
+* Required mechanical output power calculation
+* Bounded power-feasibility screening without assuming manufacturer-specific efficiency
+* Calculation-model versioning in API responses
 * Reducer sizing diagnosis
 * Factor breakdown in the API response
 * Selection reasons explaining how the result was calculated
@@ -146,9 +149,13 @@ Example response:
 
 ```json
 {
+  "calculationModelVersion": "generic-screening-v1.1",
   "reductionRatio": 30.0,
   "serviceFactor": 1.67,
   "designTorqueNm": 501.0,
+  "requiredOutputPowerKw": 1.57,
+  "minimumRequiredOverallEfficiency": 0.714,
+  "powerFeasibilityStatus": "VERIFY_ACTUAL_EFFICIENCY_AND_MOTOR_DUTY",
   "selectionStatus": "SCREENING_OK_SELECT_REDUCER_RATED_FOR_DESIGN_TORQUE",
   "factorBreakdown": {
     "loadFactor": 1.15,
@@ -164,12 +171,43 @@ Example response:
     "Start-stop factor 1.10 was applied for 20 starts per hour.",
     "Shock factor 1.15 was applied for MEDIUM shock level.",
     "Ambient-temperature factor 1.00 was applied for 35.0 °C.",
-    "The resulting generic service factor is 1.67, so the reducer should be rated for at least 501.0 Nm."
+    "The resulting generic service factor is 1.67, so the reducer should be rated for at least 501.0 Nm.",
+    "Required mechanical output power was calculated from required torque and output speed: 1.57 kW.",
+    "The supplied motor requires a minimum overall efficiency ratio of 0.7140; power feasibility status is VERIFY_ACTUAL_EFFICIENCY_AND_MOTOR_DUTY."
   ],
   "riskNotes": [],
-  "diagnosis": "Generic screening result: service factor 1.67 gives a design torque of 501.0 Nm. Select a reducer rated for at least this design torque, then verify the final selection against manufacturer documentation."
+  "diagnosis": "Generic screening result: service factor 1.67 gives a design torque of 501.0 Nm. The supplied motor requires a minimum overall efficiency ratio of 0.7140, with power feasibility status VERIFY_ACTUAL_EFFICIENCY_AND_MOTOR_DUTY. Select a reducer rated for at least the design torque, then verify actual efficiency, motor duty, and the final selection against manufacturer documentation."
 }
 ```
+
+## Bounded Power Feasibility
+
+The API uses `motorPowerKw` to calculate a bounded power-feasibility diagnostic without assuming a manufacturer-specific gearbox efficiency.
+
+```text
+requiredOutputPowerKw = requiredTorqueNm * 2 * pi * outputRpm / 60,000
+minimumRequiredOverallEfficiency = requiredOutputPowerKw / motorPowerKw
+```
+
+The power calculation uses `requiredTorqueNm`, not `designTorqueNm`. Design torque includes the generic service factor and is used for reducer rating screening; it is not treated as continuous operating output torque.
+
+The API returns:
+
+```text
+VERIFY_ACTUAL_EFFICIENCY_AND_MOTOR_DUTY
+```
+
+when the requested operating point is theoretically possible below 100% overall efficiency, but actual drivetrain efficiency and motor duty still require verification.
+
+It returns:
+
+```text
+REQUIRED_OUTPUT_POWER_MEETS_OR_EXCEEDS_MOTOR_POWER
+```
+
+when the required mechanical output power is equal to or greater than the supplied motor rated power. This condition requires engineering review because it leaves no allowance for drivetrain losses.
+
+Status evaluation uses unrounded calculation values with a small floating-point comparison tolerance at the 100% boundary. Returned numeric fields are rounded for API readability.
 
 ## Engineering Risk Diagnosis
 
@@ -215,7 +253,7 @@ This project includes automated checks for both domain logic and API behavior.
 The current verification flow covers:
 
 * Java domain tests for service factor calculation
-* boundary tests for duty-cycle, start-stop, and ambient-temperature thresholds
+* boundary tests for duty-cycle, start-stop, ambient-temperature, and power-feasibility thresholds
 * MockMvc API tests for successful and invalid requests
 * ProblemDetail error responses for invalid API inputs
 * JaCoCo coverage verification with an 80% minimum threshold
@@ -249,8 +287,6 @@ It explains the multiplicative service factor model, factor thresholds, risk not
 
 Possible future improvements include:
 
-* public deployment for a live API endpoint and Swagger UI access
-* a deployed public demo endpoint
 * exported screening summaries for technical communication
 * additional non-manufacturer-specific checks for mounting environment, operating assumptions, and specification review
 
@@ -304,10 +340,8 @@ CAD drawing generation, manufacturer-specific dimensional databases, and model-n
 Potential future improvements include:
 
 * simple web UI for entering selection conditions
-* public deployment with live OpenAPI / Swagger UI access
 * PDF-style selection summary output
 * optional project history storage
-* deployment to a public cloud environment
 * generic IEC/DIN-related filtering notes without manufacturer-specific catalog data
 
 ## Documentation
