@@ -43,7 +43,11 @@ jobs:
               -H "Content-Type: application/json" \
               -d '{"motorPowerKw":2.2,"inputRpm":1500,"outputRpm":50,"requiredTorqueNm":300,"loadType":"MODERATE","operatingHoursPerDay":12,"startsPerHour":20,"shockLevel":"MEDIUM","ambientTemperatureC":35}' \
               | tee /tmp/api-response.json \
-              | grep -q '"designTorqueNm":501.0'; then
+              | grep -q '"designTorqueNm":501.0' && \
+              grep -q '"requiredOutputPowerKw":1.57' /tmp/api-response.json && \
+              grep -q '"minimumRequiredOverallEfficiency":0.714' /tmp/api-response.json && \
+              grep -q '"powerFeasibilityStatus":"VERIFY_ACTUAL_EFFICIENCY_AND_MOTOR_DUTY"' /tmp/api-response.json && \
+              grep -q '"calculationModelVersion":"generic-screening-v1.1"' /tmp/api-response.json; then
               echo "API smoke test passed."
               exit 0
             fi

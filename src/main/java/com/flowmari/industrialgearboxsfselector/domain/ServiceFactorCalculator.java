@@ -5,6 +5,8 @@ import java.util.List;
 
 public class ServiceFactorCalculator {
 
+    private static final String CALCULATION_MODEL_VERSION = "generic-screening-v1.1";
+    private static final double POWER_COMPARISON_EPSILON_KW = 1.0e-9;
     private static final String SCREENING_OK_STATUS = "SCREENING_OK_SELECT_REDUCER_RATED_FOR_DESIGN_TORQUE";
     private static final String ENGINEERING_REVIEW_STATUS = "SCREENING_REQUIRES_ENGINEERING_REVIEW";
 
@@ -31,16 +33,44 @@ public class ServiceFactorCalculator {
 
         double designTorqueNm = roundToOneDecimal(input.requiredTorqueNm() * serviceFactor);
 
-        List<String> riskNotes = buildRiskNotes(input);
+        double requiredOutputPowerKwRaw = calculateRequiredOutputPowerKw(input);
+        double minimumRequiredOverallEfficiencyRaw = requiredOutputPowerKwRaw / input.motorPowerKw();
+        PowerFeasibilityStatus powerFeasibilityStatus = determinePowerFeasibilityStatus(
+                requiredOutputPowerKwRaw,
+                input.motorPowerKw()
+        );
+        double requiredOutputPowerKw = roundToTwoDecimals(requiredOutputPowerKwRaw);
+        double minimumRequiredOverallEfficiency = roundToFourDecimals(minimumRequiredOverallEfficiencyRaw);
+
+        List<String> riskNotes = buildRiskNotes(input, powerFeasibilityStatus);
         List<String> engineeringReviewChecklist = buildEngineeringReviewChecklist(input);
         String selectionStatus = riskNotes.isEmpty() ? SCREENING_OK_STATUS : ENGINEERING_REVIEW_STATUS;
-        List<String> selectionReasons = buildSelectionReasons(input, reductionRatio, serviceFactor, designTorqueNm, factorBreakdown);
-        String diagnosis = buildDiagnosis(serviceFactor, designTorqueNm, riskNotes);
-
-        return new GearboxSelectionResult(
+        List<String> selectionReasons = buildSelectionReasons(
+                input,
                 reductionRatio,
                 serviceFactor,
                 designTorqueNm,
+                factorBreakdown,
+                requiredOutputPowerKw,
+                minimumRequiredOverallEfficiency,
+                powerFeasibilityStatus
+        );
+        String diagnosis = buildDiagnosis(
+                serviceFactor,
+                designTorqueNm,
+                minimumRequiredOverallEfficiency,
+                powerFeasibilityStatus,
+                riskNotes
+        );
+
+        return new GearboxSelectionResult(
+                CALCULATION_MODEL_VERSION,
+                reductionRatio,
+                serviceFactor,
+                designTorqueNm,
+                requiredOutputPowerKw,
+                minimumRequiredOverallEfficiency,
+                powerFeasibilityStatus,
                 selectionStatus,
                 factorBreakdown,
                 selectionReasons,
@@ -129,12 +159,29 @@ public class ServiceFactorCalculator {
         return 1.20;
     }
 
+    private double calculateRequiredOutputPowerKw(GearboxSelectionInput input) {
+        return input.requiredTorqueNm() * 2.0 * Math.PI * input.outputRpm() / 60_000.0;
+    }
+
+    private PowerFeasibilityStatus determinePowerFeasibilityStatus(
+            double requiredOutputPowerKwRaw,
+            double motorPowerKw
+    ) {
+        if (requiredOutputPowerKwRaw >= motorPowerKw - POWER_COMPARISON_EPSILON_KW) {
+            return PowerFeasibilityStatus.REQUIRED_OUTPUT_POWER_MEETS_OR_EXCEEDS_MOTOR_POWER;
+        }
+        return PowerFeasibilityStatus.VERIFY_ACTUAL_EFFICIENCY_AND_MOTOR_DUTY;
+    }
+
     private List<String> buildSelectionReasons(
             GearboxSelectionInput input,
             double reductionRatio,
             double serviceFactor,
             double designTorqueNm,
-            FactorBreakdown factorBreakdown
+            FactorBreakdown factorBreakdown,
+            double requiredOutputPowerKw,
+            double minimumRequiredOverallEfficiency,
+            PowerFeasibilityStatus powerFeasibilityStatus
     ) {
         return List.of(
                 "Reduction ratio was calculated from input rpm and output rpm: %.1f.".formatted(reductionRatio),
@@ -143,11 +190,19 @@ public class ServiceFactorCalculator {
                 "Start-stop factor %.2f was applied for %d starts per hour.".formatted(factorBreakdown.startStopFactor(), input.startsPerHour()),
                 "Shock factor %.2f was applied for %s shock level.".formatted(factorBreakdown.shockFactor(), input.shockLevel()),
                 "Ambient-temperature factor %.2f was applied for %.1f °C.".formatted(factorBreakdown.ambientTemperatureFactor(), input.ambientTemperatureC()),
-                "The resulting generic service factor is %.2f, so the reducer should be rated for at least %.1f Nm.".formatted(serviceFactor, designTorqueNm)
+                "The resulting generic service factor is %.2f, so the reducer should be rated for at least %.1f Nm.".formatted(serviceFactor, designTorqueNm),
+                "Required mechanical output power was calculated from required torque and output speed: %.2f kW.".formatted(requiredOutputPowerKw),
+                "The supplied motor requires a minimum overall efficiency ratio of %.4f; power feasibility status is %s.".formatted(
+                        minimumRequiredOverallEfficiency,
+                        powerFeasibilityStatus
+                )
         );
     }
 
-    private List<String> buildRiskNotes(GearboxSelectionInput input) {
+    private List<String> buildRiskNotes(
+            GearboxSelectionInput input,
+            PowerFeasibilityStatus powerFeasibilityStatus
+    ) {
         List<String> riskNotes = new ArrayList<>();
 
         if (input.ambientTemperatureC() > 50) {
@@ -168,6 +223,10 @@ public class ServiceFactorCalculator {
             riskNotes.add("Heavy load or high shock conditions may require an additional safety margin and manufacturer review.");
         }
 
+        if (powerFeasibilityStatus == PowerFeasibilityStatus.REQUIRED_OUTPUT_POWER_MEETS_OR_EXCEEDS_MOTOR_POWER) {
+            riskNotes.add("Required mechanical output power meets or exceeds the supplied motor rated power, leaving no allowance for drivetrain losses; recheck motor sizing, motor duty, and the requested operating point.");
+        }
+
         return riskNotes;
     }
 
@@ -177,6 +236,7 @@ public class ServiceFactorCalculator {
         checklist.add("Verify the final reducer rating, service factor, and application conditions against official manufacturer documentation.");
         checklist.add("Confirm mounting position, shaft orientation, and installation constraints before final selection.");
         checklist.add("Confirm coupling, motor, and driven-machine interfaces separately before final selection.");
+        checklist.add("Verify actual overall drivetrain efficiency and motor duty against manufacturer data before final selection.");
 
         if (input.ambientTemperatureC() > 40) {
             checklist.add("Review ambient-temperature derating, thermal rating, and lubricant recommendation for the installation environment.");
@@ -197,9 +257,20 @@ public class ServiceFactorCalculator {
         return checklist;
     }
 
-    private String buildDiagnosis(double serviceFactor, double designTorqueNm, List<String> riskNotes) {
-        String diagnosis = "Generic screening result: service factor %.2f gives a design torque of %.1f Nm. Select a reducer rated for at least this design torque, then verify the final selection against manufacturer documentation."
-                .formatted(serviceFactor, designTorqueNm);
+    private String buildDiagnosis(
+            double serviceFactor,
+            double designTorqueNm,
+            double minimumRequiredOverallEfficiency,
+            PowerFeasibilityStatus powerFeasibilityStatus,
+            List<String> riskNotes
+    ) {
+        String diagnosis = "Generic screening result: service factor %.2f gives a design torque of %.1f Nm. The supplied motor requires a minimum overall efficiency ratio of %.4f, with power feasibility status %s. Select a reducer rated for at least the design torque, then verify actual efficiency, motor duty, and the final selection against manufacturer documentation."
+                .formatted(
+                        serviceFactor,
+                        designTorqueNm,
+                        minimumRequiredOverallEfficiency,
+                        powerFeasibilityStatus
+                );
 
         if (!riskNotes.isEmpty()) {
             diagnosis += " Additional engineering review is recommended because risk notes were detected.";
@@ -214,5 +285,9 @@ public class ServiceFactorCalculator {
 
     private double roundToTwoDecimals(double value) {
         return Math.round(value * 100.0) / 100.0;
+    }
+
+    private double roundToFourDecimals(double value) {
+        return Math.round(value * 10_000.0) / 10_000.0;
     }
 }

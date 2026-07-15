@@ -21,7 +21,7 @@ class GearboxSelectionControllerTest {
     private MockMvc mockMvc;
 
     @Test
-    void returnsGearboxSelectionReasoningFromPostApi() throws Exception {
+    void returnsGearboxSelectionReasoningAndPowerFeasibilityFromPostApi() throws Exception {
         mockMvc.perform(post("/api/gearbox/selection")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -38,9 +38,13 @@ class GearboxSelectionControllerTest {
                                 }
                                 """))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.calculationModelVersion").value("generic-screening-v1.1"))
                 .andExpect(jsonPath("$.reductionRatio").value(30.0))
                 .andExpect(jsonPath("$.serviceFactor").value(1.67))
                 .andExpect(jsonPath("$.designTorqueNm").value(501.0))
+                .andExpect(jsonPath("$.requiredOutputPowerKw").value(1.57))
+                .andExpect(jsonPath("$.minimumRequiredOverallEfficiency").value(0.714))
+                .andExpect(jsonPath("$.powerFeasibilityStatus").value("VERIFY_ACTUAL_EFFICIENCY_AND_MOTOR_DUTY"))
                 .andExpect(jsonPath("$.selectionStatus").value("SCREENING_OK_SELECT_REDUCER_RATED_FOR_DESIGN_TORQUE"))
                 .andExpect(jsonPath("$.factorBreakdown.loadFactor").value(1.15))
                 .andExpect(jsonPath("$.factorBreakdown.dutyCycleFactor").value(1.15))
@@ -49,11 +53,38 @@ class GearboxSelectionControllerTest {
                 .andExpect(jsonPath("$.factorBreakdown.ambientTemperatureFactor").value(1.00))
                 .andExpect(jsonPath("$.selectionReasons[0]").value(containsString("Reduction ratio")))
                 .andExpect(jsonPath("$.selectionReasons[6]").value(containsString("501.0 Nm")))
+                .andExpect(jsonPath("$.selectionReasons[7]").value(containsString("1.57 kW")))
                 .andExpect(jsonPath("$.riskNotes.length()").value(0))
-                .andExpect(jsonPath("$.engineeringReviewChecklist.length()").value(3))
+                .andExpect(jsonPath("$.engineeringReviewChecklist.length()").value(4))
                 .andExpect(jsonPath("$.engineeringReviewChecklist[0]").value(containsString("manufacturer documentation")))
                 .andExpect(jsonPath("$.engineeringReviewChecklist[1]").value(containsString("mounting position")))
-                .andExpect(jsonPath("$.diagnosis").value(containsString("manufacturer documentation")));
+                .andExpect(jsonPath("$.engineeringReviewChecklist[3]").value(containsString("drivetrain efficiency")))
+                .andExpect(jsonPath("$.diagnosis").value(containsString("minimum overall efficiency ratio")));
+    }
+
+    @Test
+    void returnsEngineeringReviewWhenRequiredOutputPowerExceedsMotorPower() throws Exception {
+        mockMvc.perform(post("/api/gearbox/selection")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "motorPowerKw": 1.5,
+                                  "inputRpm": 1500,
+                                  "outputRpm": 50,
+                                  "requiredTorqueNm": 300,
+                                  "loadType": "MODERATE",
+                                  "operatingHoursPerDay": 12,
+                                  "startsPerHour": 20,
+                                  "shockLevel": "MEDIUM",
+                                  "ambientTemperatureC": 35
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.requiredOutputPowerKw").value(1.57))
+                .andExpect(jsonPath("$.minimumRequiredOverallEfficiency").value(1.0472))
+                .andExpect(jsonPath("$.powerFeasibilityStatus").value("REQUIRED_OUTPUT_POWER_MEETS_OR_EXCEEDS_MOTOR_POWER"))
+                .andExpect(jsonPath("$.selectionStatus").value("SCREENING_REQUIRES_ENGINEERING_REVIEW"))
+                .andExpect(jsonPath("$.riskNotes[0]").value(containsString("no allowance for drivetrain losses")));
     }
 
     @Test
@@ -79,8 +110,8 @@ class GearboxSelectionControllerTest {
                 .andExpect(jsonPath("$.designTorqueNm").value(948.0))
                 .andExpect(jsonPath("$.riskNotes.length()").value(4))
                 .andExpect(jsonPath("$.riskNotes[0]").value(containsString("Ambient temperature")))
-                .andExpect(jsonPath("$.engineeringReviewChecklist.length()").value(7))
-                .andExpect(jsonPath("$.engineeringReviewChecklist[5]").value(containsString("coupling compatibility")));
+                .andExpect(jsonPath("$.engineeringReviewChecklist.length()").value(8))
+                .andExpect(jsonPath("$.engineeringReviewChecklist[6]").value(containsString("coupling compatibility")));
     }
 
     @Test

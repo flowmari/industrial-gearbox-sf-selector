@@ -36,7 +36,7 @@ flowchart TD
 |---|---|---|
 | API layer | `GearboxSelectionController`, `GearboxSelectionRequest`, `GearboxSelectionResponse` | Exposes the REST endpoint, receives validated input, and returns structured API responses. |
 | Error handling | `ApiExceptionHandler` | Converts validation, malformed JSON, and domain validation errors into ProblemDetail responses. |
-| Domain layer | `ServiceFactorCalculator`, `GearboxSelectionInput`, `GearboxSelectionResult`, `FactorBreakdown` | Calculates reduction ratio, generic service factor, design torque, factor breakdowns, selection reasons, and risk notes. |
+| Domain layer | `ServiceFactorCalculator`, `GearboxSelectionInput`, `GearboxSelectionResult`, `FactorBreakdown`, `PowerFeasibilityStatus` | Calculates reduction ratio, generic service factor, design torque, bounded power feasibility, factor breakdowns, selection reasons, and risk notes. |
 | Configuration | `GearboxConfiguration` | Keeps calculator wiring explicit and simple. |
 | Health endpoints | `HealthController` | Provides deployment health checks through `/` and `/health`. |
 | API documentation | `OpenApiConfiguration`, OpenAPI annotations | Exposes OpenAPI JSON and Swagger UI for API inspection. |
@@ -57,6 +57,10 @@ The domain layer calculates:
 * reduction ratio
 * generic service factor
 * design torque
+* required mechanical output power
+* minimum required overall efficiency
+* power-feasibility status
+* calculation-model version
 * factor breakdown
 * selection reasons
 * risk notes
@@ -83,7 +87,7 @@ This keeps error responses predictable for API users and prevents domain validat
 The project is verified with:
 
 * Java domain tests
-* boundary tests for duty-cycle, start-stop, and ambient-temperature thresholds
+* boundary tests for duty-cycle, start-stop, ambient-temperature, and power-feasibility thresholds
 * MockMvc API tests
 * OpenAPI documentation tests
 * JaCoCo coverage verification with an 80% minimum threshold

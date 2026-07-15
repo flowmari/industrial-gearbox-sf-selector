@@ -41,6 +41,10 @@ The API currently returns:
 * reduction ratio
 * generic service factor
 * design torque
+* required mechanical output power
+* minimum required overall efficiency
+* power-feasibility status
+* calculation-model version
 * selection status
 * factor breakdown
 * selection reasons
@@ -122,6 +126,43 @@ Example:
 
 The API then explains that the reducer should be rated for at least the calculated design torque, before final verification against manufacturer documentation.
 
+## Bounded Power Feasibility
+
+The model uses the supplied motor rated mechanical output power for a bounded feasibility check.
+
+```text
+requiredOutputPowerKw = requiredTorqueNm * 2 * pi * outputRpm / 60,000
+minimumRequiredOverallEfficiency = requiredOutputPowerKw / motorPowerKw
+```
+
+`requiredTorqueNm` is used for this calculation because it represents the requested operating-point torque. `designTorqueNm` includes the generic service factor and is used for reducer rating screening; it is not assumed to be continuous operating torque.
+
+The model does not assume a gearbox or drivetrain efficiency. Instead, it returns the minimum overall efficiency required for the supplied motor to satisfy the requested output point.
+
+```text
+VERIFY_ACTUAL_EFFICIENCY_AND_MOTOR_DUTY
+```
+
+means the requested output point is below the supplied motor rated power, but actual drivetrain efficiency, operating losses, and motor duty still require verification.
+
+```text
+REQUIRED_OUTPUT_POWER_MEETS_OR_EXCEEDS_MOTOR_POWER
+```
+
+means the requested mechanical output power is equal to or greater than the supplied motor rated power. This leaves no allowance for drivetrain losses and therefore triggers engineering review.
+
+The comparison is performed using unrounded values with a small floating-point tolerance at the 100% boundary. Numeric API fields are rounded only after the status has been determined.
+
+## Calculation Model Version
+
+The API returns:
+
+```text
+generic-screening-v1.1
+```
+
+This version identifies the generic screening rules used for the response. It is separate from the application release version and makes future rule changes traceable.
+
 ## Selection Status
 
 The API currently returns one of two screening statuses.
@@ -165,6 +206,9 @@ Examples:
 * 30 and 31 starts per hour
 * 40.0 °C and 40.1 °C
 * 50.0 °C and 50.1 °C
+* required efficiency just below 100%
+* required efficiency exactly at 100%
+* required efficiency above 100%
 
 This is important because small changes around threshold values can change the service factor, design torque, selection status, and risk notes.
 
